@@ -1,5 +1,15 @@
-node_modules/
-dist/
+# Environment variables
+.env
 .env.local
+.env.*.local
+
+# Next.js build output
+.next/
+out/
+
+# Node modules
+node_modules/
+
+# OS files
 .DS_Store
-*.log
+Thumbs.db
