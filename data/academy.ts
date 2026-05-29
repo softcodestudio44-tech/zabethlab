@@ -27,6 +27,9 @@ export interface Course {
   bookSource?: string;
   isPublished: boolean;
   launchDate?: string;
+  telegramLink: string;
+  type: "book" | "course"; // ← ADDED: distinguishes books from courses
+  bookPurchaseLink?: string; // ← ADDED: link to buy physical book (for books only)
 }
 
 export interface Module {
@@ -44,15 +47,15 @@ export const courses: Course[] = [
     slug: "glow-from-within-foundation",
     title: "Glow From Within",
     subtitle: "A Clean Beauty Journey to Confidence and Care",
-    description: "Your foundational course in understanding skin science, building effective routines, and embracing your natural beauty. Based on Elizabeth's bestselling book, this course takes you from confusion to confidence.",
+    description: "Your foundational guide to understanding skin science, building effective routines, and embracing your natural beauty. Based on Elizabeth's bestselling book.",
     category: "skincare",
     level: "beginner",
     duration: "4 weeks",
     lessons: 24,
     image: "/images/courses/glow-from-within.jpg",
     price: {
-      naira: 25000,
-      dollar: 55
+      naira: 8000,
+      dollar: 18
     },
     instructor: {
       name: "Elizabeth Aderibigbe",
@@ -141,7 +144,10 @@ export const courses: Course[] = [
     },
     bookSource: "Glow From Within",
     isPublished: true,
-    launchDate: "2024-03-01"
+    launchDate: "2024-03-01",
+    telegramLink: "", // Books don't have Telegram groups
+    type: "book", // ← THIS IS A BOOK
+    bookPurchaseLink: "https://paystack.com/buy/glow-from-within-book" // ← Link to buy physical book
   },
   {
     id: "crowned-in-confidence",
@@ -155,8 +161,8 @@ export const courses: Course[] = [
     lessons: 36,
     image: "/images/courses/crowned-in-confidence.jpg",
     price: {
-      naira: 30000,
-      dollar: 65
+      naira: 8000,
+      dollar: 18
     },
     instructor: {
       name: "Elizabeth Aderibigbe",
@@ -259,7 +265,10 @@ export const courses: Course[] = [
     },
     bookSource: "Crowned in Confidence",
     isPublished: true,
-    launchDate: "2024-06-01"
+    launchDate: "2024-06-01",
+    telegramLink: "", // Books don't have Telegram groups
+    type: "book", // ← THIS IS A BOOK
+    bookPurchaseLink: "https://paystack.com/buy/crowned-in-confidence-book" // ← Link to buy physical book
   },
   {
     id: "organic-cosmetology-phase1",
@@ -338,7 +347,9 @@ export const courses: Course[] = [
       validFor: "2 years"
     },
     isPublished: true,
-    launchDate: "2024-09-01"
+    launchDate: "2024-09-01",
+    telegramLink: "https://t.me/+ZabethOCPhase1", // ← REAL TELEGRAM LINK
+    type: "course" // ← THIS IS A COURSE
   },
   {
     id: "organic-cosmetology-phase2",
@@ -431,7 +442,9 @@ export const courses: Course[] = [
       validFor: "2 years"
     },
     isPublished: true,
-    launchDate: "2024-10-01"
+    launchDate: "2024-10-01",
+    telegramLink: "https://t.me/+ZabethOCPhase2", // ← REAL TELEGRAM LINK
+    type: "course" // ← THIS IS A COURSE
   },
   {
     id: "organic-cosmetology-complete",
@@ -496,7 +509,9 @@ export const courses: Course[] = [
       validFor: "3 years"
     },
     isPublished: false,
-    launchDate: "2025-01-15"
+    launchDate: "2025-01-15",
+    telegramLink: "https://t.me/+ZabethOCComplete", // ← REAL TELEGRAM LINK
+    type: "course" // ← THIS IS A COURSE
   }
 ];
 
@@ -513,8 +528,8 @@ export const getPublishedCourses = (): Course[] => {
 };
 
 export const categories = [
-  { id: "all", name: "All Courses", count: courses.filter(c => c.isPublished).length },
-  { id: "skincare", name: "Skincare", count: courses.filter(c => c.category === "skincare" && c.isPublished).length },
+  { id: "all", name: "All", count: courses.filter(c => c.isPublished).length },
+  { id: "skincare", name: "Books", count: courses.filter(c => c.type === "book" && c.isPublished).length },
   { id: "haircare", name: "Hair Care", count: courses.filter(c => c.category === "haircare" && c.isPublished).length },
-  { id: "formulation", name: "Formulation", count: courses.filter(c => c.category === "formulation" && c.isPublished).length }
+  { id: "formulation", name: "Courses", count: courses.filter(c => c.type === "course" && c.isPublished).length }
 ] as const;

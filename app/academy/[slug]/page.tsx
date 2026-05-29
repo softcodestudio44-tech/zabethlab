@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -14,11 +14,14 @@ import {
   Users,
   Star,
   Lock,
-  Loader2
+  Loader2,
+  BookMarked,
+  GraduationCap
 } from "lucide-react";
-import { getCourseBySlug, courses } from "@/data/academy";
+import { getCourseBySlug } from "@/data/academy";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getUser } from "@/lib/supabase";
 
 interface PaystackButtonProps {
   email: string;
@@ -97,7 +100,16 @@ interface Props {
 export default function CourseDetailPage({ params }: Props) {
   const course = getCourseBySlug(params.slug);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  
+  const [user, setUser] = useState<any>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+
+  useEffect(() => {
+    getUser().then((u) => {
+      setUser(u);
+      setLoadingUser(false);
+    });
+  }, []);
+
   if (!course) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -112,6 +124,11 @@ export default function CourseDetailPage({ params }: Props) {
   }
 
   const isComingSoon = !course.isPublished;
+  const isBook = course.type === "book"; // ← CHECK IF BOOK
+
+  const handleLoginClick = () => {
+    localStorage.setItem('redirectAfterLogin', window.location.pathname);
+  };
 
   return (
     <div className="min-h-screen bg-black">
@@ -133,6 +150,21 @@ export default function CourseDetailPage({ params }: Props) {
             {/* Left: Content */}
             <div>
               <div className="flex flex-wrap items-center gap-3 mb-6">
+                {/* ← ADDED: Book or Course badge */}
+                <Badge className={isBook ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-blue-500/20 text-blue-400 border-blue-500/30"}>
+                  {isBook ? (
+                    <>
+                      <BookMarked className="w-3 h-3 mr-1" />
+                      Book
+                    </>
+                  ) : (
+                    <>
+                      <GraduationCap className="w-3 h-3 mr-1" />
+                      Course
+                    </>
+                  )}
+                </Badge>
+                
                 <Badge className="bg-[#228B22]/20 text-[#228B22] border-[#228B22]/30">
                   {course.level}
                 </Badge>
@@ -181,22 +213,22 @@ export default function CourseDetailPage({ params }: Props) {
                 <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl text-center">
                   <Clock className="w-5 h-5 text-[#228B22] mx-auto mb-2" />
                   <div className="text-white font-semibold">{course.duration}</div>
-                  <div className="text-xs text-zinc-500">Duration</div>
+                  <div className="text-xs text-zinc-500">{isBook ? "Read Time" : "Duration"}</div>
                 </div>
                 <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl text-center">
                   <BookOpen className="w-5 h-5 text-[#228B22] mx-auto mb-2" />
                   <div className="text-white font-semibold">{course.lessons}</div>
-                  <div className="text-xs text-zinc-500">Lessons</div>
+                  <div className="text-xs text-zinc-500">{isBook ? "Chapters" : "Lessons"}</div>
                 </div>
                 <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl text-center">
                   <Users className="w-5 h-5 text-[#228B22] mx-auto mb-2" />
                   <div className="text-white font-semibold">500+</div>
-                  <div className="text-xs text-zinc-500">Students</div>
+                  <div className="text-xs text-zinc-500">{isBook ? "Readers" : "Students"}</div>
                 </div>
               </div>
             </div>
 
-            {/* Right: Enrollment Card */}
+            {/* Right: Enrollment / Purchase Card */}
             <div className="lg:sticky lg:top-24">
               <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-2xl">
                 {/* Course Image */}
@@ -216,14 +248,43 @@ export default function CourseDetailPage({ params }: Props) {
                     </span>
                     <span className="text-zinc-500">/ ${course.price.dollar}</span>
                   </div>
-                  <p className="text-sm text-zinc-500">One-time payment • Lifetime access</p>
+                  <p className="text-sm text-zinc-500">
+                    {isBook ? "Physical book + Digital access" : "One-time payment • Lifetime access"}
+                  </p>
                 </div>
 
-                {paymentSuccess ? (
+                {/* ← BOOK: Show purchase link */}
+                {isBook ? (
+                  <a 
+                    href={course.bookPurchaseLink || '#'} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block w-full"
+                  >
+                    <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white mb-4">
+                      <BookMarked className="w-5 h-5 mr-2" />
+                      Get the Book
+                    </Button>
+                  </a>
+                ) : paymentSuccess ? (
+                  /* ← COURSE: Payment success shows Telegram */
                   <div className="text-center p-4 bg-[#228B22]/20 border border-[#228B22]/30 rounded-xl mb-4">
                     <CheckCircle2 className="w-8 h-8 text-[#228B22] mx-auto mb-2" />
-                    <p className="text-white font-semibold">Payment Successful!</p>
-                    <p className="text-sm text-zinc-400">Check your email for access details.</p>
+                    <p className="text-white font-semibold mb-1">Payment Successful!</p>
+                    <p className="text-sm text-zinc-400 mb-4">Join your course group on Telegram</p>
+                    <a 
+                      href={course.telegramLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block bg-[#0088cc] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#0077b5] transition-colors"
+                    >
+                      Join Telegram Group
+                    </a>
+                    {!course.telegramLink && (
+                      <p className="text-xs text-yellow-500 mt-2">
+                        ⚠️ Telegram link not set
+                      </p>
+                    )}
                   </div>
                 ) : isComingSoon ? (
                   <Button 
@@ -234,9 +295,24 @@ export default function CourseDetailPage({ params }: Props) {
                     <Lock className="w-4 h-4 mr-2" />
                     Coming {course.launchDate}
                   </Button>
+                ) : loadingUser ? (
+                  <Button 
+                    disabled
+                    className="w-full bg-zinc-700 text-zinc-400 cursor-not-allowed mb-4"
+                  >
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </Button>
+                ) : !user ? (
+                  <Link href="/login" onClick={handleLoginClick}>
+                    <Button className="w-full bg-[#228B22] hover:bg-[#1a6b1a] text-white mb-4">
+                      <Lock className="w-4 h-4 mr-2" />
+                      Login to Enroll
+                    </Button>
+                  </Link>
                 ) : (
                   <PaystackButton
-                    email="student@example.com"
+                    email={user.email}
                     amount={course.price.naira * 100}
                     courseName={course.title}
                     onSuccess={(ref) => {
@@ -249,29 +325,48 @@ export default function CourseDetailPage({ params }: Props) {
                   />
                 )}
 
-                {!isComingSoon && !paymentSuccess && (
+                {!isBook && !isComingSoon && !paymentSuccess && (
                   <p className="text-center text-zinc-500 text-sm">
                     30-day satisfaction guarantee
                   </p>
                 )}
 
                 <div className="mt-6 pt-6 border-t border-zinc-800 space-y-3">
-                  <div className="flex items-center gap-3 text-sm text-zinc-400">
-                    <CheckCircle2 className="w-4 h-4 text-[#228B22]" />
-                    <span>Full course access</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-zinc-400">
-                    <CheckCircle2 className="w-4 h-4 text-[#228B22]" />
-                    <span>Certificate of completion</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-zinc-400">
-                    <CheckCircle2 className="w-4 h-4 text-[#228B22]" />
-                    <span>Community access</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-zinc-400">
-                    <CheckCircle2 className="w-4 h-4 text-[#228B22]" />
-                    <span>Future updates included</span>
-                  </div>
+                  {isBook ? (
+                    <>
+                      <div className="flex items-center gap-3 text-sm text-zinc-400">
+                        <CheckCircle2 className="w-4 h-4 text-amber-500" />
+                        <span>Physical book delivered</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-zinc-400">
+                        <CheckCircle2 className="w-4 h-4 text-amber-500" />
+                        <span>Digital PDF included</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-zinc-400">
+                        <CheckCircle2 className="w-4 h-4 text-amber-500" />
+                        <span>Author-signed copy option</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3 text-sm text-zinc-400">
+                        <CheckCircle2 className="w-4 h-4 text-[#228B22]" />
+                        <span>Full course access</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-zinc-400">
+                        <CheckCircle2 className="w-4 h-4 text-[#228B22]" />
+                        <span>Certificate of completion</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-zinc-400">
+                        <CheckCircle2 className="w-4 h-4 text-[#228B22]" />
+                        <span>Telegram community access</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-zinc-400">
+                        <CheckCircle2 className="w-4 h-4 text-[#228B22]" />
+                        <span>Future updates included</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -279,11 +374,11 @@ export default function CourseDetailPage({ params }: Props) {
         </div>
       </section>
 
-      {/* Course Content */}
+      {/* Course / Book Content */}
       <section className="py-16 border-t border-zinc-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-8">
-            What You'll Learn
+            {isBook ? "What's Inside" : "What You'll Learn"}
           </h2>
 
           <div className="space-y-6">
@@ -306,7 +401,7 @@ export default function CourseDetailPage({ params }: Props) {
                       <h3 className="text-lg font-semibold text-white">
                         {module.title}
                       </h3>
-                      {module.practicalLab && (
+                      {module.practicalLab && !isBook && (
                         <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
                           Practical Lab
                         </Badge>
@@ -322,7 +417,7 @@ export default function CourseDetailPage({ params }: Props) {
                         <Clock className="w-3 h-3" />
                         {module.duration}
                       </span>
-                      <span>{module.topics.length} topics</span>
+                      <span>{module.topics.length} {isBook ? "sections" : "topics"}</span>
                     </div>
 
                     <ul className="space-y-2">
@@ -344,56 +439,77 @@ export default function CourseDetailPage({ params }: Props) {
         </div>
       </section>
 
-      {/* Certification */}
-      <section className="py-16 bg-gradient-to-b from-[#228B22]/5 to-transparent">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="p-8 bg-zinc-900/50 border border-[#228B22]/30 rounded-2xl">
-            <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-              <div className="w-16 h-16 bg-[#228B22]/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <Award className="w-8 h-8 text-[#228B22]" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white mb-2">
-                  {course.certification.title}
-                </h3>
-                <p className="text-zinc-400 mb-2">
-                  {course.certification.description}
-                </p>
-                <p className="text-sm text-[#228B22]">
-                  Valid for: {course.certification.validFor}
-                </p>
+      {/* Certification (only for courses) */}
+      {!isBook && (
+        <section className="py-16 bg-gradient-to-b from-[#228B22]/5 to-transparent">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="p-8 bg-zinc-900/50 border border-[#228B22]/30 rounded-2xl">
+              <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+                <div className="w-16 h-16 bg-[#228B22]/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <Award className="w-8 h-8 text-[#228B22]" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    {course.certification.title}
+                  </h3>
+                  <p className="text-zinc-400 mb-2">
+                    {course.certification.description}
+                  </p>
+                  <p className="text-sm text-[#228B22]">
+                    Valid for: {course.certification.validFor}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-            Ready to Transform Your Skills?
+            {isBook ? "Ready to Start Reading?" : "Ready to Transform Your Skills?"}
           </h2>
           <p className="text-zinc-400 mb-8 max-w-2xl mx-auto">
-            Join the community of women who are choosing confidence over comparison, 
-            and nature over chemicals. Your journey starts here.
+            {isBook 
+              ? "Get your copy today and begin your journey to confidence and care."
+              : "Join the community of women who are choosing confidence over comparison, and nature over chemicals. Your journey starts here."
+            }
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              disabled={isComingSoon}
-              className="bg-[#228B22] hover:bg-[#1a6b1a] text-white px-8"
-            >
-              {isComingSoon ? "Coming Soon" : "Enroll Now"}
-            </Button>
+            {isBook ? (
+              <a 
+                href={course.bookPurchaseLink || '#'} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-block"
+              >
+                <Button 
+                  size="lg" 
+                  className="bg-amber-600 hover:bg-amber-700 text-white px-8"
+                >
+                  <BookMarked className="w-5 h-5 mr-2" />
+                  Get the Book
+                </Button>
+              </a>
+            ) : (
+              <Button 
+                size="lg" 
+                disabled={isComingSoon}
+                className="bg-[#228B22] hover:bg-[#1a6b1a] text-white px-8"
+              >
+                {isComingSoon ? "Coming Soon" : "Enroll Now"}
+              </Button>
+            )}
             <Link href="/academy">
               <Button 
                 size="lg" 
                 variant="outline" 
                 className="border-zinc-700 text-white hover:bg-zinc-800 px-8"
               >
-                View All Courses
+                View All {isBook ? "Books" : "Courses"}
               </Button>
             </Link>
           </div>

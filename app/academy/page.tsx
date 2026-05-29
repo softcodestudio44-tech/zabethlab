@@ -15,7 +15,9 @@ import {
   CheckCircle2,
   Lock,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  BookMarked,
+  GraduationCap
 } from "lucide-react";
 import { courses, categories, type Course } from "@/data/academy";
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,7 @@ const itemVariants = {
 
 function CourseCard({ course, index }: { course: Course; index: number }) {
   const isComingSoon = !course.isPublished;
+  const isBook = course.type === "book"; // ← CHECK IF BOOK
   
   return (
     <motion.div
@@ -62,10 +65,29 @@ function CourseCard({ course, index }: { course: Course; index: number }) {
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent" />
         
         {/* Badges */}
-        <div className="absolute top-4 left-4 flex gap-2">
+        <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
+          {/* ← ADDED: Book or Course badge */}
+          <Badge className={isBook 
+            ? "bg-amber-500/20 text-amber-400 border-amber-500/30 backdrop-blur-sm" 
+            : "bg-blue-500/20 text-blue-400 border-blue-500/30 backdrop-blur-sm"
+          }>
+            {isBook ? (
+              <>
+                <BookMarked className="w-3 h-3 mr-1" />
+                Book
+              </>
+            ) : (
+              <>
+                <GraduationCap className="w-3 h-3 mr-1" />
+                Course
+              </>
+            )}
+          </Badge>
+          
           <Badge className="bg-[#228B22]/20 text-[#228B22] border-[#228B22]/30 backdrop-blur-sm">
             {course.level}
           </Badge>
+          
           {course.bookSource && (
             <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 backdrop-blur-sm">
               <Sparkles className="w-3 h-3 mr-1" />
@@ -90,9 +112,11 @@ function CourseCard({ course, index }: { course: Course; index: number }) {
         <div className="flex items-center gap-2 text-sm text-zinc-500 mb-2">
           <span className="capitalize">{course.category}</span>
           <span>•</span>
-          <span>{course.duration}</span>
+          {/* ← MODIFIED: Show "Book" or duration for courses */}
+          <span>{isBook ? "Book" : course.duration}</span>
           <span>•</span>
-          <span>{course.lessons} lessons</span>
+          {/* ← MODIFIED: "Chapters" for books, "Lessons" for courses */}
+          <span>{course.lessons} {isBook ? "chapters" : "lessons"}</span>
         </div>
         
         <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[#228B22] transition-colors">
@@ -132,9 +156,12 @@ function CourseCard({ course, index }: { course: Course; index: number }) {
           <Link href={isComingSoon ? "#" : `/academy/${course.slug}`}>
             <Button 
               disabled={isComingSoon}
-              className="bg-[#228B22] hover:bg-[#1a6b1a] text-white"
+              className={isBook 
+                ? "bg-amber-600 hover:bg-amber-700 text-white" 
+                : "bg-[#228B22] hover:bg-[#1a6b1a] text-white"
+              }
             >
-              {isComingSoon ? "Notify Me" : "Enroll Now"}
+              {isComingSoon ? "Notify Me" : isBook ? "Get the Book" : "Enroll Now"}
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </Link>
@@ -147,7 +174,7 @@ function CourseCard({ course, index }: { course: Course; index: number }) {
 function StatsSection() {
   const stats = [
     { icon: Users, value: "500+", label: "Students Enrolled" },
-    { icon: BookOpen, value: "5", label: "Expert Courses" },
+    { icon: BookOpen, value: "5", label: "Books & Courses" },
     { icon: Award, value: "98%", label: "Certification Rate" },
     { icon: Star, value: "4.9", label: "Average Rating" }
   ];
@@ -343,7 +370,7 @@ export default function AcademyPage() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Featured Courses
+              Featured Books & Courses
             </h2>
             <p className="text-zinc-400">
               Beginner to advanced programs designed for real transformation
@@ -427,7 +454,7 @@ export default function AcademyPage() {
               className="bg-[#228B22] hover:bg-[#1a6b1a] text-white px-8"
               onClick={scrollToCourses}
             >
-              Browse All Courses
+              Browse All Books & Courses
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           </motion.div>
